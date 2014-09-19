@@ -1,0 +1,12 @@
+#ifndef SERVER_H_P1
+#define SERVER_H_P1
+
+class server
+{
+ private:
+  console cons;
+ public:
+  void server();
+}
+
+#endif
