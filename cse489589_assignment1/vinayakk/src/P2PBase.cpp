@@ -19,12 +19,21 @@ void P2PBase::start()
 {
 	while (true)
 	{
-	        string cmd, cmd_str;	       
+	        string cmd;     
 		printf("\n> ");
 		getline(cin, cmd);
-		//reference for string tolower : http://stackoverflow.com/questions/313970/c-stdstring-to-lower-case
-		transform(cmd.begin(), cmd.end(), cmd.begin(), ::tolower);
-		command_map(cmd);
+		//reference : http://stackoverflow.com/questions/18941179/splitting-string-from-inputstream-with-whitespace-delimiter
+		istringstream iss(cmd);
+		vector<string> cmd_list;
+		for(string str; iss >> str;)
+		  cmd_list.push_back(str);
+
+		//reference for string tolower : http://stackoverflow.com/questions/313970/c-stdstring-to-lower-case		      
+		transform(cmd_list[0].begin(), cmd_list[0].end(), cmd_list[0].begin(), ::tolower);
+						
+		if(!command_map(cmd_list))
+		  if(!base_command_map(cmd_list))
+		     printf("\nInvalid command");		  
 	}	
 }
 
@@ -48,11 +57,12 @@ bool P2PBase::add_host(string name, string ip, int port)
 	return true;
 }
 
-bool P2PBase::command_map(string cmd)
+bool P2PBase::base_command_map(vector<string> commands)
 {
+        string cmd = commands[0];
 	if (cmd == "creator")
 	{
-		printf("\nVinayak Karuppasamy");
+		printf("Vinayak Karuppasamy");
 		printf("\nvinayakk");
 		printf("\nvinayakk@buffalo.edu");
 		printf("\nI have read and understood the course academic integrity policy located at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity");	
@@ -62,9 +72,13 @@ bool P2PBase::command_map(string cmd)
 		//TODO
 	  string ip = get_self_ip();
 	  printf("IP address:%s", ip.c_str());
+	  return true;
 	}
 	else if (cmd == "myport")
-		printf("Port number:%d", port);
+        {
+	  printf("Port number:%d", port);
+	  return true;
+	}		
 	return false;
 }
 
@@ -75,15 +89,28 @@ void P2PBase::set_port(int port)
 
 string P2PBase::get_self_ip()
 {
-  	  const int server_port = 5432;
-	  const char* google_dns = "8.8.8.8";
-	  hostent server_addr = gethostbyname(google_dns);
-	  int s = socket(PF_INET, SOCK_DGRAM, 0);
-	  sockaddr_in addr;
-	  bzero((char*)&addr, sizeof(addr));
-	  addr.sin_family = AF_INET;
-	  bcopy(server_addr->h_addr, (char*)&addr.sin_addr, addr->h_length);
-	  addr->sin_port = htons(server_port);
-	  connect(s, (sockaddr_in*)&addr, sizeof(addr));
-	  return addr.sin_addr.s_addr;
+  //reference : http://stackoverflow.com/questions/25879280/getting-my-own-ip-address-by-connecting-using-udp-socket
+
+  addrinfo hints, *res;
+  socklen_t sock_len;
+  sockaddr_storage remoteaddr;
+  char ip[INET_ADDRSTRLEN];
+  int status;
+
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_DGRAM;
+  
+  status = getaddrinfo("8.8.8.8", "5678", &hints, &res);
+  if(status != 0) return "Error getting address";
+  int sock_desc = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+  if(sock_desc == -1) return "Error creating socket";
+  status = connect(sock_desc, res->ai_addr, res->ai_addrlen);
+  if(status == -1) return "Error connecting";
+  getsockname(sock_desc, (sockaddr*)&remoteaddr, &sock_len); 
+  sockaddr_in* addr = (sockaddr_in*)&remoteaddr;
+  inet_ntop(AF_INET, &addr->sin_addr, ip, sock_len);
+  freeaddrinfo(res);
+  close(sock_desc);
+  return ip;
 }

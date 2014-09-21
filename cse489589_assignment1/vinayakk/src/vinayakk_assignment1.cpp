@@ -24,7 +24,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <string>
-#include "P2PBase.h"
+#include "Client.h"
 
 #include "../include/global.h"
 
@@ -44,13 +44,12 @@ int main(int argc, char **argv)
   string mode(argv[1]);
   int port = atoi(argv[2]);
   if (mode == "s")
-    printf("\nServer");
+    printf("Server");
   else if (mode == "c")
-    printf("\nClient");
+    printf("Client");
   else
-    printf("Invalid argument, select either server or client (s/c)");	
-  printf("\n%d", port);
-  P2PBase base(port);
-  base.start();
+    printf("Invalid argument, select either server or client (s/c)");
+  Client client(port);
+  client.start();
   return 0;
 }

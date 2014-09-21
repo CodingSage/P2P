@@ -9,7 +9,6 @@ HostDetails::HostDetails(int id, string name, string ip, int port)
 	this->port = port;
 }
 
-
 HostDetails::~HostDetails()
 {
 }

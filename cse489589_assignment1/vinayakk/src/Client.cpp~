@@ -1,0 +1,31 @@
+#include "Client.h"
+
+
+Client::Client()
+{
+}
+
+Client::Client(int port)
+{
+	set_port(port);
+}
+
+
+Client::~Client()
+{
+}
+
+bool Client::command_map(string cmd)
+{
+  if(cmd == "register")
+    {
+      printf("\nclient call to register");
+      return true;
+    }
+  else if(cmd == "connect")
+    {
+      printf("\nclient call to connect");
+      return true;
+    }
+  return false;
+}

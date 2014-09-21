@@ -13,7 +13,7 @@ CFLAGS	= -I$(INC_DIR)
 all: assignment1
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -g -c -o $@ $< $(CFLAGS)
 
 assignment1: $(OBJ_PATH)
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
