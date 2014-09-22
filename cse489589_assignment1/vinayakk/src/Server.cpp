@@ -14,7 +14,12 @@ Server::~Server()
 {
 }
 
-bool Server::command_map(string cmd)
+bool Server::command_map(vector<string> cmd)
 {
   return false;
+}
+
+void Server::receive_data(char* buf, int nbytes)
+{
+  //TODO update host list
 }

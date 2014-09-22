@@ -22,14 +22,20 @@ using namespace std;
 
 class P2PBase
 {
-private:
-	int port;
+ protected:
+        int port, fdmax;
+	fd_set master;
+	int initialize();
 	vector<HostDetails> host_list;
-	bool add_host(string name, string ip, int port);
+	int get_socket(string ip, string port, bool is_server);
+	bool add_host(int socket_desc);
+	void virtual receive_data(char* buf, int nbytes) = 0;
 	bool base_command_map(vector<string> cmd);
 	bool virtual command_map(vector<string> cmd) = 0;
+	void command_execute(string cmd);
 	string get_self_ip();
-public:
+
+ public:
 	P2PBase();
 	P2PBase(int port);
 	~P2PBase();
