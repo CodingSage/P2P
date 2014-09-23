@@ -41,17 +41,17 @@ using namespace std;
  */
 int main(int argc, char **argv)
 {
-  if (argc != 3)
-    printf("Invalid arguments");
-  P2PBase* base;
-  string mode(argv[1]);
-  int port = atoi(argv[2]);
-  if (mode == "s")
-    base = new Server(port);
-  else if (mode == "c")
-    base = new Client(port);
-  else
-    printf("Invalid argument, select either server or client (s/c)");
-  base->start();
-  return 0;
+	if (argc != 3)
+		printf("Invalid arguments");
+	P2PBase* base;
+	string mode(argv[1]);
+	int port = atoi(argv[2]);
+	if (mode == "s")
+		base = new Server(port);
+	else if (mode == "c")
+		base = new Client(port);
+	else
+		printf("Invalid argument, select either server or client (s/c)");
+	base->start();
+	return 0;
 }
