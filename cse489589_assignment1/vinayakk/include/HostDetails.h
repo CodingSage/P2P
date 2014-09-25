@@ -27,6 +27,7 @@ public:
 	int get_port();
 	int get_socket();
 	void set_socket(int sock);
+	void set_port(int port);
 };
 
 #endif

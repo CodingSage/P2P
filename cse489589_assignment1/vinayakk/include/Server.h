@@ -5,11 +5,11 @@
 
 using namespace std;
 
-class Server : public P2PBase
+class Server: public P2PBase
 {
 private:
-        bool command_map(vector<string> cmd);
-	void receive_data(char* buf, int nbytes);
+	bool command_map(vector<string> cmd);
+	void receive_data(int socket);
 public:
 	Server();
 	Server(int port);

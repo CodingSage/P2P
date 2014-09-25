@@ -55,3 +55,8 @@ void HostDetails::set_socket(int sock)
 {
 	socket = sock;
 }
+
+void HostDetails::set_port(int port)
+{
+	this->port = port;
+}

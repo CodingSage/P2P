@@ -31,11 +31,6 @@ bool Client::command_map(vector<string> commands)
 		printf("\nclient call to connect");
 		return true;
 	}
-	else if (cmd == "list")
-	{
-		list_hosts();
-		return true;
-	}
 	else if (cmd == "terminate")
 	{
 		printf("\nclient call");
@@ -64,32 +59,47 @@ bool Client::command_map(vector<string> commands)
 	return false;
 }
 
-void Client::receive_data(char* buf, int nbytes)
+void Client::receive_data(int socket)
 {
 	//TODO file transfer or host list from server
+	char buf[256];
+	int nbytes = recv(socket, buf, sizeof(buf), 0);
+	if (nbytes <= 0)
+	{
+		perror("recv");
+		close(socket);
+		FD_CLR(socket, &master);
+	}
+	else
+	{
+	}
 }
 
 void Client::register_client(string ip, string port)
 {
+	int iport = atoi(port.c_str());
 	if (host_list.size() > 0)
 	{
 		HostDetails detail = *host_list.begin();
-		printf("Already registered with server: %s, %s", detail.get_ip().c_str(),
-				detail.get_name().c_str());
+		printf("Already registered with server: %s, %s",
+				detail.get_ip().c_str(), detail.get_name().c_str());
 		return;
 	}
 	int sock = get_socket(ip, port, false);
 	FD_SET(sock, &master);
 	if (sock > fdmax)
 		fdmax = sock;
+	//send port no.
+	int sport = htonl(this->port);
+	int tbytes = send(sock, &sport, sizeof(sport), 0);
+	printf("bytes transferred: %d", tbytes);
+	fflush(stdout);
 
 	//TODO check this, deprecated usage
 	in_addr addr;
 	inet_pton(AF_INET, ip.c_str(), &addr);
 	hostent *h = gethostbyaddr(&addr, sizeof(addr), AF_INET);
 
-	int iport = atoi(port.c_str());
 	add_to_hostlist(ip, string(h->h_name), iport, sock);
 	list_hosts();
-	//send port no.
 }

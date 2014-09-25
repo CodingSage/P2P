@@ -30,8 +30,9 @@ protected:
 	int get_socket(string ip, string port, bool is_server);
 	bool add_host(int socket_desc);
 	void add_to_hostlist(string ip, string name, int port, int socket);
+	void remove_from_hostlist(int socket);
 	void list_hosts();
-	void virtual receive_data(char* buf, int nbytes) = 0;
+	void virtual receive_data(int socket) = 0;
 	bool base_command_map(vector<string> cmd);
 	bool virtual command_map(vector<string> cmd) = 0;
 	void command_execute(string cmd);

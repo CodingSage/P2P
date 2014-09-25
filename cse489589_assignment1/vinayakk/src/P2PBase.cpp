@@ -116,18 +116,7 @@ void P2PBase::start()
 				}
 				else
 				{
-					char buf[256];
-					int nbytes = recv(i, buf, sizeof(buf), 0);
-					if (nbytes <= 0)
-					{
-						perror("recv");
-						close(i);
-						FD_CLR(i, &master);
-					}
-					else
-					{
-						receive_data(buf, nbytes);
-					}
+					receive_data(i);
 				}
 			}
 		}
@@ -156,6 +145,8 @@ void P2PBase::command_execute(string cmd)
 
 bool P2PBase::add_host(int socket)
 {
+	if (host_list.size() > MAX_PARALLEL_DOWNLOAD + 1)
+		return false;
 	sockaddr_storage remote;
 	char remote_ip[INET6_ADDRSTRLEN];
 	socklen_t addrlen = sizeof(remote);
@@ -168,6 +159,13 @@ bool P2PBase::add_host(int socket)
 	FD_SET(new_sock, &master);
 	if (new_sock > fdmax)
 		fdmax = new_sock;
+	char buf[256];
+	int nbytes = recv(new_sock, buf, sizeof(buf), 0);
+	if(nbytes == -1)
+		perror("recv");
+	int byteport = *((int*)buf);
+	printf("bytes received : %d", nbytes);
+	uint32_t nport = ntohl(byteport);
 	inet_ntop(remote.ss_family, (sockaddr*) &remote, remote_ip,
 			INET6_ADDRSTRLEN);
 
@@ -177,9 +175,11 @@ bool P2PBase::add_host(int socket)
 			service, sizeof(service), 0);
 	string name(hostname);
 	string ip(remote_ip);
-	int port = 0;
-	add_to_hostlist(ip, name, port, new_sock);
+	add_to_hostlist(ip, name, nport, new_sock);
+	//TODO remove this
 	list_hosts();
+	printf("\n> ");
+	fflush(stdout);
 	return true;
 }
 
@@ -206,6 +206,11 @@ bool P2PBase::base_command_map(vector<string> commands)
 		printf("Port number:%d", port);
 		return true;
 	}
+	else if (cmd == "list")
+	{
+		list_hosts();
+		return true;
+	}
 	return false;
 }
 
@@ -217,7 +222,6 @@ void P2PBase::set_port(int port)
 string P2PBase::get_self_ip()
 {
 	//reference : http://stackoverflow.com/questions/25879280/getting-my-own-ip-address-by-connecting-using-udp-socket
-
 	addrinfo hints, *res;
 	socklen_t sock_len;
 	sockaddr_storage remoteaddr;
@@ -273,4 +277,16 @@ void P2PBase::list_hosts()
 		printf("%-5d%-35s%-20s%-8d\n", i->get_id(), i->get_name().c_str(),
 				i->get_ip().c_str(), i->get_port());
 	fflush(stdout);
+}
+
+void P2PBase::remove_from_hostlist(int socket)
+{
+	for (vector<HostDetails>::iterator i = host_list.begin();
+			i != host_list.end(); i++)
+	{
+		if (i->get_socket() != socket)
+			continue;
+		host_list.erase(i);
+		break;
+	}
 }
