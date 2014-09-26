@@ -88,7 +88,7 @@ void P2PBase::start()
 	FD_ZERO(&master);
 	FD_ZERO(&read_fds);
 	int listener = initialize();
-	int fd_max = listener;
+	fdmax = listener;
 	FD_SET(listener, &master);
 	FD_SET(0, &master); //file descriptor for std. IO
 	printf("> ");
@@ -96,13 +96,13 @@ void P2PBase::start()
 	{
 		read_fds = master;
 		fflush(stdout);
-		if (select(fd_max + 1, &read_fds, NULL, NULL, NULL) == -1)
+		if (select(fdmax + 1, &read_fds, NULL, NULL, NULL) == -1)
 		{
-			printf("select");
+			perror("select");
 			exit(0);
 		}
 
-		for (int i = 0; i <= fd_max; i++)
+		for (int i = 0; i <= fdmax; i++)
 		{
 			if (FD_ISSET(i, &read_fds))
 			{
@@ -161,13 +161,13 @@ bool P2PBase::add_host(int socket)
 		fdmax = new_sock;
 	char buf[256];
 	int nbytes = recv(new_sock, buf, sizeof(buf), 0);
-	if(nbytes == -1)
+	if (nbytes == -1)
 		perror("recv");
-	int byteport = *((int*)buf);
+	int byteport = *((int*) buf);
 	printf("bytes received : %d", nbytes);
 	uint32_t nport = ntohl(byteport);
 	inet_ntop(remote.ss_family, (sockaddr*) &remote, remote_ip,
-			INET6_ADDRSTRLEN);
+	INET6_ADDRSTRLEN);
 
 	char hostname[1024];
 	char service[20];
@@ -176,8 +176,7 @@ bool P2PBase::add_host(int socket)
 	string name(hostname);
 	string ip(remote_ip);
 	add_to_hostlist(ip, name, nport, new_sock);
-	//TODO remove this
-	list_hosts();
+	post_addhost();
 	printf("\n> ");
 	fflush(stdout);
 	return true;
@@ -270,13 +269,19 @@ void P2PBase::add_to_hostlist(string ip, string name, int port, int socket)
 	}
 }
 
-void P2PBase::list_hosts()
+void P2PBase::list_hosts(vector<HostDetails> hosts)
 {
-	vector<HostDetails>::iterator i;
-	for (i = host_list.begin(); i != host_list.end(); i++)
+	printf("\n");
+	for (vector<HostDetails>::iterator i = hosts.begin(); i != hosts.end(); i++)
 		printf("%-5d%-35s%-20s%-8d\n", i->get_id(), i->get_name().c_str(),
 				i->get_ip().c_str(), i->get_port());
+	printf("\n> ");
 	fflush(stdout);
+}
+
+void P2PBase::list_hosts()
+{
+	list_hosts(host_list);
 }
 
 void P2PBase::remove_from_hostlist(int socket)
@@ -289,4 +294,34 @@ void P2PBase::remove_from_hostlist(int socket)
 		host_list.erase(i);
 		break;
 	}
+}
+
+int P2PBase::send_data(int socket, void* data, int size)
+{
+	int sent = 0, left = size;
+	char* sdata = (char*) data;
+	while (sent != size)
+	{
+		int isent = send(socket, sdata + sent, left, 0);
+		if (isent == -1)
+		{
+			perror("send");
+			return left;
+		}
+		left -= isent;
+		sent += isent;
+	}
+
+	//TODO remove this
+	if (left != 0)
+	{
+		printf("\nbytes left to transfer: %d", left);
+		fflush(stdout);
+	}
+	else
+	{
+		printf("\nbytes transfered from socket %d: %d of %d", socket, size, sent);
+		fflush(stdout);
+	}
+	return left;
 }

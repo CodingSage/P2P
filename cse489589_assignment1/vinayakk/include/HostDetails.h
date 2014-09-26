@@ -16,6 +16,7 @@ private:
 	int socket;
 
 public:
+	HostDetails(int id, string name, string ip, int port);
 	HostDetails(int id, string name, string ip, int port, int socket);
 	~HostDetails();
 	//reference for vector sort: http://stackoverflow.com/questions/9706517/sort-a-vector-of-objects-by-an-objects-attribute

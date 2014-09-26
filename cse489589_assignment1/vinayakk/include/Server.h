@@ -10,6 +10,7 @@ class Server: public P2PBase
 private:
 	bool command_map(vector<string> cmd);
 	void receive_data(int socket);
+	void post_addhost();
 public:
 	Server();
 	Server(int port);

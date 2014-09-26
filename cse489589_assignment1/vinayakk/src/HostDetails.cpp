@@ -1,5 +1,13 @@
 #include "HostDetails.h"
 
+HostDetails::HostDetails(int id, string name, string ip, int port)
+{
+	this->id = id;
+	this->name = name;
+	this->ip = ip;
+	this->port = port;
+	this->socket = -1;
+}
 
 HostDetails::HostDetails(int id, string name, string ip, int port, int socket)
 {
@@ -16,9 +24,9 @@ HostDetails::~HostDetails()
 
 string HostDetails::to_string()
 {
-	ostringstream convert;
-	convert << port;
-	return id + " " + name + " " + ip + " " + convert.str();
+	ostringstream cport, cid;
+	cport << port; cid << id;
+	return cid.str() + "|" + name + "|" + ip + "|" + cport.str() + "|-";
 }
 
 int HostDetails::get_id()
@@ -43,7 +51,7 @@ int HostDetails::get_port()
 
 bool HostDetails::operator<(const HostDetails &other) const
 {
-	return false;// this->id < other.get_id();
+	return false; // this->id < other.get_id();
 }
 
 int HostDetails::get_socket()
