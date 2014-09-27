@@ -12,7 +12,6 @@ private:
 
 	bool command_map(vector<string> cmd);
 	void receive_data(int socket);
-	void register_server(string ip, string port);
 	void connect_host(string addr, string port);
 	void post_addhost();
 	void update_serverlist(string buf);

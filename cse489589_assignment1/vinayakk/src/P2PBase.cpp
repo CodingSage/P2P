@@ -148,7 +148,7 @@ bool P2PBase::add_host(int socket)
 	if (host_list.size() > MAX_PARALLEL_DOWNLOAD + 1)
 		return false;
 	sockaddr_storage remote;
-	char remote_ip[INET6_ADDRSTRLEN];
+	char remote_ip[INET_ADDRSTRLEN];
 	socklen_t addrlen = sizeof(remote);
 	int new_sock = accept(socket, (sockaddr*) &remote, &addrlen);
 	if (new_sock == -1)
@@ -166,8 +166,7 @@ bool P2PBase::add_host(int socket)
 	int byteport = *((int*) buf);
 	printf("bytes received : %d", nbytes);
 	uint32_t nport = ntohl(byteport);
-	inet_ntop(remote.ss_family, (sockaddr*) &remote, remote_ip,
-	INET6_ADDRSTRLEN);
+	inet_ntop(remote.ss_family, &(((sockaddr_in*)&remote)->sin_addr), remote_ip, INET_ADDRSTRLEN);
 
 	char hostname[1024];
 	char service[20];
@@ -190,8 +189,7 @@ bool P2PBase::base_command_map(vector<string> commands)
 		printf("Vinayak Karuppasamy");
 		printf("\nvinayakk");
 		printf("\nvinayakk@buffalo.edu");
-		printf(
-				"\nI have read and understood the course academic integrity policy located at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity");
+		printf("\nI have read and understood the course academic integrity policy located at http://www.cse.buffalo.edu/faculty/dimitrio/courses/cse4589_f14/index.html#integrity");
 		return true;
 	}
 	else if (cmd == "myip")
@@ -320,7 +318,8 @@ int P2PBase::send_data(int socket, void* data, int size)
 	}
 	else
 	{
-		printf("\nbytes transfered from socket %d: %d of %d", socket, size, sent);
+		printf("\nbytes transfered from socket %d: %d of %d", socket, size,
+				sent);
 		fflush(stdout);
 	}
 	return left;

@@ -58,7 +58,14 @@ bool Client::command_map(vector<string> commands)
 			printf("Invalid arguments");
 			return true;
 		}
-		register_server(commands[1], commands[2]);
+		if (host_list.size() > 0)
+		{
+			HostDetails detail = *host_list.begin();
+			printf("Already registered with server: %s, %s",
+					detail.get_ip().c_str(), detail.get_name().c_str());
+			return true;
+		}
+		connect_host(commands[1], commands[2]);
 		return true;
 	}
 	else if (cmd == "connect")
@@ -68,17 +75,54 @@ bool Client::command_map(vector<string> commands)
 			printf("Invalid arguments");
 			return true;
 		}
-		connect_host(commands[1], commands[2]);
+		bool flag = false;
+		string addr = commands[1];
+		for (vector<HostDetails>::iterator i = server_list.begin();
+				i != server_list.end(); i++)
+		{
+			if (i->get_ip() == addr || i->get_name() == addr)
+			{
+				flag = true;
+				break;
+			}
+		}
+		if (!flag)
+		{
+			printf("Host not present in server IP list, canceling operation");
+			fflush(stdout);
+			return true;
+		}
+		connect_host(addr, commands[2]);
 		return true;
 	}
 	else if (cmd == "terminate")
 	{
-		printf("\nclient call");
+		if(commands.size() > 2)
+		{
+			printf("Invalid arguments");
+			fflush(stdout);
+			return true;
+		}
+		int socket = atoi(commands[1].c_str());
+		for (vector<HostDetails>::iterator i = host_list.begin();
+				i != host_list.end(); i++)
+		{
+			if (i->get_id() == socket)
+			{
+				close(i->get_socket());
+				FD_CLR(i->get_socket(), &master);
+				remove_from_hostlist(i->get_socket());
+				break;
+			}
+		}
 		return true;
 	}
 	else if (cmd == "exit")
 	{
-		printf("\nclient call");
+		for (vector<HostDetails>::iterator i = host_list.begin();
+				i != host_list.end(); i++)
+			close(i->get_socket());
+		exit(0);
 		return true;
 	}
 	else if (cmd == "upload")
@@ -116,7 +160,7 @@ void Client::receive_data(int socket)
 	}
 	else
 	{
-		char* strdata = (char*)buf;
+		char* strdata = (char*) buf;
 		string data(strdata);
 		if (data[0] == 's')
 			update_serverlist(data);
@@ -125,38 +169,9 @@ void Client::receive_data(int socket)
 	}
 }
 
-void Client::connect_host(string addr, string port)
+void Client::connect_host(string ip, string port)
 {
-	bool flag = false;
-	for (vector<HostDetails>::iterator i = server_list.begin();
-			i != server_list.end(); i++)
-	{
-		if (i->get_ip() == addr || i->get_name() == addr)
-		{
-			flag = true;
-			break;
-		}
-	}
-	if (!flag)
-	{
-		printf("Host not present in server IP list, canceling operation");
-		fflush(stdout);
-		return;
-	}
-
-}
-
-void Client::register_server(string ip, string port)
-{
-	int iport = atoi(port.c_str());
-	if (host_list.size() > 0)
-	{
-		HostDetails detail = *host_list.begin();
-		printf("Already registered with server: %s, %s",
-				detail.get_ip().c_str(), detail.get_name().c_str());
-		return;
-	}
-	int sock = get_socket(ip, port, false);
+	int sock = get_socket(ip, port, false), status;
 	FD_SET(sock, &master);
 	if (sock > fdmax)
 		fdmax = sock;
@@ -166,9 +181,14 @@ void Client::register_server(string ip, string port)
 
 	//TODO check this, deprecated usage
 	in_addr addr;
-	inet_pton(AF_INET, ip.c_str(), &addr);
+	if ((status = inet_pton(AF_INET, ip.c_str(), &addr) <= 0))
+		perror("inet_pton");
 	hostent *h = gethostbyaddr(&addr, sizeof(addr), AF_INET);
-
-	add_to_hostlist(ip, string(h->h_name), iport, sock);
+	if (h == NULL)
+	{
+		herror("gethostbyaddr");
+		return;
+	}
+	add_to_hostlist(ip, string(h->h_name), atoi(port.c_str()), sock);
 	list_hosts();
 }
