@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <fstream>
 #include <string.h>
 #include <vector>
 #include <algorithm>
@@ -23,6 +24,7 @@ using namespace std;
 class P2PBase
 {
 protected:
+	const static int MAX_BUFFER_LENGTH = 256;
 	int port, fdmax;
 	fd_set master;
 	int initialize();

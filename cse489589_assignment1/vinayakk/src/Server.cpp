@@ -30,6 +30,11 @@ Server::~Server()
 
 bool Server::command_map(vector<string> cmd)
 {
+	if (cmd.size() > 0 && cmd[0] == "statistics")
+	{
+		printf("\nclient call");
+		return true;
+	}
 	return false;
 }
 
@@ -47,6 +52,6 @@ void Server::receive_data(int socket)
 	}
 	else
 	{
-		//It looks like the Server doesn't receive data from clients except for registering - verify
+		//server will receive statistics from the clients
 	}
 }

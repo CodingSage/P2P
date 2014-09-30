@@ -15,7 +15,8 @@ private:
 	void connect_host(string addr, string port);
 	void post_addhost();
 	void update_serverlist(string buf);
-	void file_transfer(char* buf);
+	void file_receive(string buf, int socket);
+	void file_send(string path, int socket);
 public:
 	Client();
 	Client(int port);

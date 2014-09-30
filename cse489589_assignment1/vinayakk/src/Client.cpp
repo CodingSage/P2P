@@ -44,16 +44,12 @@ void Client::update_serverlist(string buf)
 	list_hosts(list);
 }
 
-void Client::file_transfer(char* buf)
-{
-}
-
 bool Client::command_map(vector<string> commands)
 {
 	string cmd = commands[0];
 	if (cmd == "register")
 	{
-		if (commands.size() < 3)
+		if (commands.size() != 3)
 		{
 			printf("Invalid arguments");
 			return true;
@@ -70,7 +66,7 @@ bool Client::command_map(vector<string> commands)
 	}
 	else if (cmd == "connect")
 	{
-		if (commands.size() < 3)
+		if (commands.size() != 3)
 		{
 			printf("Invalid arguments");
 			return true;
@@ -97,7 +93,7 @@ bool Client::command_map(vector<string> commands)
 	}
 	else if (cmd == "terminate")
 	{
-		if(commands.size() > 2)
+		if (commands.size() != 2)
 		{
 			printf("Invalid arguments");
 			fflush(stdout);
@@ -127,15 +123,20 @@ bool Client::command_map(vector<string> commands)
 	}
 	else if (cmd == "upload")
 	{
-		printf("\nclient call");
+		if (commands.size() != 3)
+		{
+			printf("Invalid arguments");
+			fflush(stdout);
+			return true;
+		}
+		int id = atoi(commands[1].c_str());
+		for (vector<HostDetails>::iterator i = host_list.begin();
+				i != host_list.end(); i++)
+			if (i->get_id() == id)
+				file_send(commands[2], i->get_socket());
 		return true;
 	}
 	else if (cmd == "download")
-	{
-		printf("\nclient call");
-		return true;
-	}
-	else if (cmd == "statistics")
 	{
 		printf("\nclient call");
 		return true;
@@ -145,8 +146,8 @@ bool Client::command_map(vector<string> commands)
 
 void Client::receive_data(int socket)
 {
-	//TODO file transfer or host list from server; check for cases where file is large
-	char buf[256];
+	//TODO file transfer from client or host list from server; check for cases where file is large
+	char buf[MAX_BUFFER_LENGTH];
 	int nbytes = recv(socket, buf, sizeof(buf), 0);
 	if (nbytes <= 0)
 	{
@@ -165,8 +166,99 @@ void Client::receive_data(int socket)
 		if (data[0] == 's')
 			update_serverlist(data);
 		else
-			file_transfer(buf);
+			file_receive(data, socket);
 	}
+}
+
+void Client::file_receive(string init_buf, int socket)
+{
+	//metadata -> c:size:filename:file
+	time_t start;
+	int pos = init_buf.find(':');
+	string sender = init_buf.substr(0, pos + 1);
+	init_buf = init_buf.substr(pos + 1);
+	pos = init_buf.find(':');
+	string metadata = init_buf.substr(0, pos);
+	int total_size = atoi(metadata.c_str());
+	init_buf = init_buf.substr(pos + 1);
+	pos = init_buf.find('/');
+	string filename = init_buf.substr(0, pos);
+	init_buf = init_buf.substr(pos + 1);
+	char buf[MAX_BUFFER_LENGTH];
+
+	string data = init_buf;
+	int received = 0;
+	while (received != total_size)
+	{
+		int bytes = recv(socket, buf, sizeof(buf), 0);
+		if (bytes <= 0)
+		{
+			if (bytes == 0)
+				printf("Error while downloading file, connection lost");
+			else
+				perror("recv");
+			fflush(stdout);
+			close(socket);
+			FD_CLR(socket, &master);
+			remove_from_hostlist(socket);
+			return;
+		}
+		else
+		{
+			received += bytes;
+			string rec((char*) buf);
+			data += buf;
+		}
+	}
+	const char* file = data.c_str();
+	string path;
+	ofstream stream(path.c_str(), ios::out | ios::binary);
+	int size = data.length() * sizeof(char);
+	stream.write(file, size);
+	stream.close();
+	time_t end;
+	ostringstream str, time, res;
+	str << size;
+	string name;
+	time << end - start;
+	res << size / (end - start);
+	for (vector<HostDetails>::iterator i = host_list.begin();
+			i != host_list.end(); i++)
+	{
+		if (i->get_socket() == socket)
+			name = i->get_name();
+	}
+	string msg = "Tx: " + name + "­ ->  i" + name + ", File Size: " + str.str()
+			+ " Bytes, Time Taken: " + time.str() + " seconds, Tx Rate: "
+			+ res.str() + "  bits/second";
+	printf("%s", msg.c_str());
+	fflush(stdout);
+//notify server and print transfer success
+}
+
+void Client::file_send(string path, int socket)
+{
+//metadata -> c:size:path:file
+	ifstream stream(path.c_str());
+	stream.seekg(0, ios::end);
+	size_t length = stream.tellg();
+	char *file = new char[length];
+	stream.seekg(0, ios::beg);
+	stream.read(file, length);
+	stream.close();
+	string data(file);
+	int size = length * sizeof(char);
+	ostringstream s;
+	s << size;
+	size_t pos;
+	while ((pos = path.find('/')) != string::npos)
+		path = path.substr(pos + 1);
+	data = "c:" + s.str() + ":" + path + ":" + data;
+	time_t start;
+	send_data(socket, file, size);
+	time_t end;
+
+//print sent statement
 }
 
 void Client::connect_host(string ip, string port)
@@ -175,11 +267,11 @@ void Client::connect_host(string ip, string port)
 	FD_SET(sock, &master);
 	if (sock > fdmax)
 		fdmax = sock;
-	//send port no.
+//send port no.
 	int sport = htonl(this->port);
 	send_data(sock, &sport, sizeof(sport));
 
-	//TODO check this, deprecated usage
+//TODO check this, deprecated usage
 	in_addr addr;
 	if ((status = inet_pton(AF_INET, ip.c_str(), &addr) <= 0))
 		perror("inet_pton");
